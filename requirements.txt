@@ -1,0 +1,7 @@
+Flask
+Flask-SQLAlchemy
+mysql-connector-python
+PyJWT
+python-dotenv
+argon2-cffi
+sqlalchemy
