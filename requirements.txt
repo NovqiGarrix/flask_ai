@@ -5,3 +5,6 @@ PyJWT
 python-dotenv
 argon2-cffi
 sqlalchemy
+tensorflow
+pytorch
+gunicorn

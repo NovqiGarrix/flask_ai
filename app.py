@@ -5,6 +5,7 @@ from flask_sqlalchemy import SQLAlchemy
 from argon2 import PasswordHasher
 import utils.load_env as load_env
 from utils.pyjwt import sign_token, verify_token as verify_jwt_token
+from model import summarize
 
 load_env.load()
 
@@ -258,9 +259,30 @@ def logout():
 def run_model():
     # Run your model here
 
+    body = request.get_json()
+    input = body['text']
+
+    output = summarize(input)
+
+    if output is None:
+        data = {
+            "code": 400,
+            "status": "Bad Request",
+            "errors": [
+                {
+                    "error": "We can't summarize your text"
+                }
+            ]
+        }
+
+        return jsonify(data), 500
+
     data = {
         "code": 200,
-        "status": "OK"
+        "status": "OK",
+        "data": {
+            "output": output
+        }
     }
 
     return jsonify(data), 200
@@ -268,4 +290,4 @@ def run_model():
 if __name__ == "__main__":
     with app.app_context():
         db.create_all()
-    app.run(port=4000, debug=True)
+    app.run(port=int(os.environ.get("PORT")), debug=True, host=os.environ.get("HOST"))
