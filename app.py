@@ -6,10 +6,14 @@ from argon2 import PasswordHasher
 import utils.load_env as load_env
 from utils.pyjwt import sign_token, verify_token as verify_jwt_token
 from model import summarize
+from flask_cors import CORS
 
 load_env.load()
 
 app = Flask(__name__)
+CORS(app, resources={r"/*": {"origins": "*"}})
+
+app.config['CORS_HEADERS'] = ['Content-Type']
 app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
@@ -110,7 +114,7 @@ def api_key_required(f):
         # Verify the API key
         user = UserModel.query.filter_by(email=user['email']).first()
 
-        if UserModel.ph.verify(user.api_key, api_key) is False:
+        if user.api_key != api_key is False:
             return jsonify({
                 "code": 401,
                 "status": "Unauthorized",
@@ -187,10 +191,16 @@ def signin():
     token = sign_token(payload)
     print("Token: " + token)
 
-    resp = make_response()
-    resp.set_cookie('token', token, httponly=True, expires=eight_hours)
+    # resp = make_response()
+    # resp.set_cookie('token', token, httponly=True, expires=eight_hours)
 
-    return redirect(os.environ.get("CLIENT_URL") + "/auth/redirect", 302)
+    # return resp.redirect("/auth/redirect")
+
+    return jsonify({
+        "code": 200,
+        "status": "OK",
+        "token": token
+    }), 200
 
 @app.route("/api/v1/auth/signup", methods=["POST"])
 def signup():
@@ -236,6 +246,24 @@ def get_me():
         "code": 200,
         "status": "OK",
         "data": request.user
+    }
+
+    return jsonify(data), 200
+
+@app.route("/api/v1/api_key", methods=["GET"])
+@token_required
+def get_api_key():
+
+    # Get the logged in user from prev middleware
+    user = request.user
+
+    # Get the user from the database
+    user = UserModel.query.filter_by(email=user['email']).first()
+
+    data = {
+        "code": 200,
+        "status": "OK",
+        "data": user.api_key
     }
 
     return jsonify(data), 200
